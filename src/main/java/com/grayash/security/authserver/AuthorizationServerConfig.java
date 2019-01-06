@@ -26,33 +26,63 @@ import java.util.Arrays;
 
 @Configuration
 @EnableAuthorizationServer
-public class OAuth2AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter{
+public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter {
+
+    private static final String CLIENT_ID = "a2c3db84-e3e4-4a6d-a66f-846bf414ee4b";
+    static final String CLIENT_SECRET = "{noop}0e1affcd-e683-4dea-96c4-82e1f5234a3b";
+
+    private static final String GRANT_TYPE_PASSWORD = "password";
+    private static final String AUTHORIZATION_CODE = "authorization_code";
+    private static final String REFRESH_TOKEN = "refresh_token";
+    private static final String SCOPE_READ = "read";
+    private static final String SCOPE_WRITE = "write";
+    private static final String TRUST = "trust";
+    private static final int VALID_FOREVER = -1;
 
     @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    CustomUserDetailsService userDetailsService;
-
+    private AuthenticationManager authManager;
+    
     @Autowired
     private JwtAccessTokenConverter jwtAccessTokenConverter;
 
-    @Override
-    public void configure(final AuthorizationServerSecurityConfigurer oauthServer) throws Exception {
-        oauthServer.tokenKeyAccess("permitAll()").checkTokenAccess("isAuthenticated()");
-        oauthServer.allowFormAuthenticationForClients();
+
+    @Bean
+    public TokenStore tokenStore() {
+        return new JwtTokenStore(accessTokenConverter());
+    }
+    
+    @Bean
+    public JwtAccessTokenConverter accessTokenConverter() {
+        final JwtAccessTokenConverter converter = new JwtAccessTokenConverter();
+        converter.setSigningKey("725e76e5-cd25-4b8a-8b57-96cb4fb356f6");
+        return converter;
     }
 
     @Override
-    public void configure(final ClientDetailsServiceConfigurer clients) throws Exception {
-        clients.inMemory().withClient("1950c3e0-dfd5-44fc-a058-792506a95a45").
-                authorizedGrantTypes("password").
-                scopes("read", "write")
-                .secret("ad9cd0b9-db4d-49b6-a722-b3a67544b2b7")
-                .autoApprove(true);
-
+    public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
+        clients
+                .inMemory()
+                .withClient(CLIENT_ID)
+                .secret(CLIENT_SECRET)
+                .authorizedGrantTypes(GRANT_TYPE_PASSWORD, AUTHORIZATION_CODE, REFRESH_TOKEN)
+                .scopes(SCOPE_READ, SCOPE_WRITE, TRUST)
+                .accessTokenValiditySeconds(VALID_FOREVER)
+                .refreshTokenValiditySeconds(VALID_FOREVER);
     }
 
+    @Override
+    public void configure(AuthorizationServerEndpointsConfigurer endpoints) {
+    	TokenEnhancerChain tokenEnhancerChain = new TokenEnhancerChain();
+        tokenEnhancerChain.setTokenEnhancers(
+          Arrays.asList(tokenEnhancer(), accessTokenConverter()));
+        
+        
+        endpoints.tokenStore(tokenStore())
+        .tokenEnhancer(tokenEnhancerChain)
+        .accessTokenConverter(jwtAccessTokenConverter)
+                .authenticationManager(authManager);
+    }
+    
     @Bean
     @Primary
     public DefaultTokenServices tokenServices() {
@@ -61,35 +91,9 @@ public class OAuth2AuthorizationServerConfig extends AuthorizationServerConfigur
         defaultTokenServices.setSupportRefreshToken(true);
         return defaultTokenServices;
     }
-
-    @Override
-    public void configure(final AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
-        endpoints
-                .tokenStore(tokenStore())
-                .authenticationManager(authenticationManager)
-                .accessTokenConverter(jwtAccessTokenConverter)
-                .userDetailsService(userDetailsService);
-    }
-
-    @Bean
-    public TokenStore tokenStore() {
-        return new JwtTokenStore(accessTokenConverter());
-    }
-
-    @Bean
-    public JwtAccessTokenConverter accessTokenConverter() {
-        final JwtAccessTokenConverter converter = new JwtAccessTokenConverter();
-        converter.setSigningKey("725e76e5-cd25-4b8a-8b57-96cb4fb356f6");
-        return converter;
-    }
-
+    
     @Bean
     public TokenEnhancer tokenEnhancer() {
         return new CustomTokenEnhancer();
-    }
-
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 }

@@ -10,7 +10,7 @@ import javax.persistence.Table;
 import java.io.Serializable;
 
 @Entity
-@Table(name = "user_information")
+@Table(name = "DATA_CUSTOMER_INFORMATION")
 @Data
 public class AuthEntity implements Serializable {
 

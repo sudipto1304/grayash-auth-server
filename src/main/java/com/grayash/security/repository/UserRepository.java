@@ -12,6 +12,6 @@ import java.util.Optional;
 @Transactional
 public interface UserRepository extends JpaRepository<AuthEntity, String> {
 
-    AuthEntity findTopByCustomerId(String customerId);
+    AuthEntity findByCustomerId(String customerId);
 
 }

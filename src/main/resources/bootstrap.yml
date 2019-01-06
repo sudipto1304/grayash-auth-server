@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: OAUTH2-SERVICE
+  profiles:
+    active: dev
+server:
+  port: ${PORT:8902}
